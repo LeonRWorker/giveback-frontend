@@ -18,7 +18,7 @@ Widget loansTopBar(BuildContext context) {
         icon: const Icon(
           Icons.add_to_photos,
           color: Color(0xFF439AE0),
-          size: 15.0,
+          size: 20.0,
         ),
         label: const Text(
           'Registrar',
