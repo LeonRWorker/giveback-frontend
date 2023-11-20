@@ -10,7 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.1.0
   dio: ^5.3.3
   flutter_dotenv: ^5.1.0
   cupertino_icons: ^1.0.2
@@ -31,6 +30,8 @@ flutter:
     - assets/cadastrese.avif
     - assets/entre.jpg
     - assets/logon.jpg
+    - assets/empty.jpg
+    - assets/.env
 
   # fonts:
   #   - family: Schyler
