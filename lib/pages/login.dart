@@ -216,8 +216,6 @@ class _LoginFormState extends State<LoginForm> {
     final String email = emailController.text;
     final String password = passwordController.text;
 
-    final BuildContext currentContext = context;
-
     final Map<String, String> data = {
       'email': email,
       'password': password,
@@ -244,7 +242,7 @@ class _LoginFormState extends State<LoginForm> {
       } else {
         final dynamic errorData = response.data;
         final String errorMessage = errorData['message'];
-        ScaffoldMessenger.of(currentContext).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Login falhou: $errorMessage'),
           ),
@@ -256,21 +254,20 @@ class _LoginFormState extends State<LoginForm> {
         if (e.response != null) {
           final dynamic errorData = e.response!.data;
           final String errorMessage = errorData['error'];
-          ScaffoldMessenger.of(currentContext).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
             ),
           );
         } else {
-          ScaffoldMessenger.of(currentContext).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Erro na solicitação: ${e.message}'),
             ),
           );
         }
       } else {
-        // Lidar com outros erros de solicitação, como conexão perdida
-        ScaffoldMessenger.of(currentContext).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro na solicitação: $e'),
           ),
