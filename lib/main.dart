@@ -5,19 +5,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  bool isLoggedIn = await checkUserLoggedIn();
-  runApp(GiveBackApp(isLoggedIn: isLoggedIn));
+  bool userData = await checkUserLoggedIn();
+  runApp(GiveBackApp(userData: userData));
 }
 
 class GiveBackApp extends StatelessWidget {
-  final bool isLoggedIn;
-  const GiveBackApp({Key? key, required this.isLoggedIn}) : super(key: key);
+  final dynamic userData;
+  const GiveBackApp({Key? key, required this.userData}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'GiveBack App',
       debugShowCheckedModeBanner: false,
-      home: isLoggedIn
+      home: userData
           ? const LoansPage(
               userData: [],
             )
@@ -28,6 +28,6 @@ class GiveBackApp extends StatelessWidget {
 
 Future<bool> checkUserLoggedIn() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  return isLoggedIn;
+  String? userData = prefs.getString('userData');
+  return userData != null ? true : false;
 }
