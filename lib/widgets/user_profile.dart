@@ -155,7 +155,7 @@ class _UserState extends State<User> {
                   backgroundColor: const Color(0xFF439AE0),
                 ),
                 icon: const Icon(
-                  Icons.exit_to_app_rounded,
+                  Icons.save_rounded,
                   color: Colors.white,
                   size: 20.0,
                 ),
