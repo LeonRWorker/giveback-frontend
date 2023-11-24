@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:giveback/pages/loans.dart';
 import 'package:giveback/pages/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -11,11 +14,11 @@ class RegisterPage extends StatelessWidget {
         backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
             Padding(
               padding: const EdgeInsets.only(left: 0, top: 0),
               child: Image.asset(
-                "assets/cadastrese.avif",
+                "assets/cadastrese.jpg",
                 width: 413,
                 height: 457,
               ),
@@ -81,9 +84,10 @@ class _RegisterFormState extends State<RegisterForm> {
 
       if (response.statusCode == 201) {
         final Map<String, dynamic> responseData = response.data;
+        await saveUserLoggedInState(responseData);
 
         Navigator.of(currentContext).push(MaterialPageRoute(
-          builder: (context) => LoansPage(userData: responseData),
+          builder: (context) => LoansPage(),
         ));
       } else {
         final dynamic errorData = response.data;
@@ -250,7 +254,7 @@ class _RegisterFormState extends State<RegisterForm> {
         ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(10)),
           child: SizedBox(
-            width: 329,
+            width: MediaQuery.of(context).size.width,
             height: 56,
             child: ElevatedButton(
               onPressed: _register,
@@ -306,5 +310,11 @@ class _RegisterFormState extends State<RegisterForm> {
         ),
       ],
     );
+  }
+
+  Future<void> saveUserLoggedInState(Map<String, dynamic> userData) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String userDataJson = jsonEncode(userData);
+    prefs.setString('userData', userDataJson);
   }
 }
