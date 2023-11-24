@@ -237,7 +237,7 @@ class _LoginFormState extends State<LoginForm> {
         Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => LoansPage(userData: responseData),
+              builder: (context) => LoansPage(),
             ));
       } else {
         final dynamic errorData = response.data;

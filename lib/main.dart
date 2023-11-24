@@ -17,11 +17,7 @@ class GiveBackApp extends StatelessWidget {
     return MaterialApp(
       title: 'GiveBack App',
       debugShowCheckedModeBanner: false,
-      home: userData
-          ? const LoansPage(
-              userData: [],
-            )
-          : const LoginPage(),
+      home: userData ? const LoansPage() : const LoginPage(),
     );
   }
 }
