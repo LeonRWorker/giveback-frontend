@@ -1,44 +1,33 @@
-// import 'dart:convert';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:giveback/pages/loans.dart';
+import 'package:giveback/widgets/update_loan.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoansScreen extends StatelessWidget {
-  final Map<String, dynamic> userData;
   final Map<String, dynamic> loan;
-  final void Function() updateLoansData;
-  const LoansScreen(
-      {Key? key,
-      required this.userData,
-      required this.loan,
-      required this.updateLoansData})
-      : super(key: key);
+  const LoansScreen({Key? key, required this.loan}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return LoansBuilder(
-        userData: userData, loan: loan, updateLoansData: updateLoansData);
+    return LoansBuilder(loan: loan);
   }
 }
 
 class LoansBuilder extends StatefulWidget {
-  final Map<String, dynamic> userData;
   final Map<String, dynamic> loan;
-  final void Function() updateLoansData;
 
-  const LoansBuilder(
-      {Key? key,
-      required this.userData,
-      required this.loan,
-      required this.updateLoansData})
-      : super(key: key);
+  const LoansBuilder({Key? key, required this.loan}) : super(key: key);
 
   @override
   State<LoansBuilder> createState() => _LoansBuilderState();
 }
 
 class _LoansBuilderState extends State<LoansBuilder> {
+  Map<String, dynamic> userData = {};
   late String formattedDate;
   late String statusText;
 
@@ -79,15 +68,23 @@ class _LoansBuilderState extends State<LoansBuilder> {
   void initState() {
     super.initState();
     getBackgroundAndDate();
+    getUserData();
+  }
+
+  Future getUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userDataJson = prefs.getString('userData');
+    setState(() {
+      userData = userDataJson != null ? jsonDecode(userDataJson) : null;
+    });
   }
 
   Future onChangeLoanStatus(
       BuildContext context, String loanId, String statusText) async {
-    await Future.delayed(const Duration(seconds: 2));
     await dotenv.load();
 
     final dio = Dio();
-    dio.options.headers['session_id'] = widget.userData['id'];
+    dio.options.headers['session_id'] = userData['id'];
 
     final String apiUrl = dotenv.env['API_URL'] ?? '';
 
@@ -112,8 +109,11 @@ class _LoansBuilderState extends State<LoansBuilder> {
             duration: const Duration(seconds: 4),
           ),
         );
-        widget.updateLoansData();
-        getBackgroundAndDate();
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LoansPage(),
+            ));
       } else {
         final dynamic errorData = response.data;
         final String errorMessage = errorData['message'];
@@ -159,78 +159,89 @@ class _LoansBuilderState extends State<LoansBuilder> {
           const SizedBox(
             height: 10,
           ),
-          ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(10)),
-            child: Dismissible(
-              key: Key(DateTime.now().microsecondsSinceEpoch.toString()),
-              direction: DismissDirection.startToEnd,
-              background: Container(
-                color: Color(widget.loan['status'] == 'inday'
-                    ? 0xFF43E091
-                    : widget.loan['status'] == 'returned'
-                        ? 0xFFE04343
-                        : 0xFF43E091),
+          GestureDetector(
+            onDoubleTap: () {
+              showDialog<String>(
+                context: context,
+                builder: (BuildContext context) => Dialog(
+                  child: updateLoan(context, widget.loan),
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              child: Dismissible(
+                key: Key(DateTime.now().microsecondsSinceEpoch.toString()),
+                background: Container(
+                  color: Color(widget.loan['status'] == 'inday'
+                      ? 0xFF43E091
+                      : widget.loan['status'] == 'returned'
+                          ? 0xFFE04343
+                          : 0xFF43E091),
+                  child: Container(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          getIcon(widget.loan['status']),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Text(_getMessageOnDimissed(widget.loan),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white))
+                        ],
+                      )),
+                ),
+                onDismissed: (direction) {
+                  String updatedStatus = widget.loan['status'] == 'inday'
+                      ? 'returned'
+                      : widget.loan['status'] == 'returned'
+                          ? 'late'
+                          : 'inday';
+                  onChangeLoanStatus(context, widget.loan['id'], updatedStatus);
+                },
                 child: Container(
-                    padding: const EdgeInsets.all(10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        getIcon(widget.loan['status']),
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        Text(_getMessageOnDimissed(widget.loan),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white))
-                      ],
-                    )),
-              ),
-              onDismissed: (direction) {
-                String updatedStatus = widget.loan['status'] == 'inday'
-                    ? 'returned'
-                    : widget.loan['status'] == 'returned'
-                        ? 'late'
-                        : 'inday';
-                onChangeLoanStatus(context, widget.loan['id'], updatedStatus);
-              },
-              child: Container(
-                width: MediaQuery.of(context).size.width * 1 - 30,
-                padding: const EdgeInsets.only(
-                    top: 10, left: 20, bottom: 10, right: 20),
-                color: Color(widget.loan['status'] == 'inday'
-                    ? 0xFF439AE0
-                    : widget.loan['status'] == 'returned'
-                        ? 0xFF43E091
-                        : 0xFFE04343),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      widget.loan['name'] + ', para ' + widget.loan['loanedto'],
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 16),
-                    ),
-                    const SizedBox(
-                      height: 5,
-                    ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(widget.loan['category'],
-                            style: const TextStyle(
-                                color: Color(0xFFF7F7F7), fontSize: 13)),
-                        Text(_getDateMessage(),
-                            style: const TextStyle(
-                                color: Color(0xFFF7F7F7), fontSize: 13)),
-                      ],
-                    ),
-                  ],
+                  width: MediaQuery.of(context).size.width * 1 - 30,
+                  padding: const EdgeInsets.only(
+                      top: 10, left: 20, bottom: 10, right: 20),
+                  color: Color(widget.loan['status'] == 'inday'
+                      ? 0xFF439AE0
+                      : widget.loan['status'] == 'returned'
+                          ? 0xFF43E091
+                          : 0xFFE04343),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        widget.loan['name'] +
+                            ', para ' +
+                            widget.loan['loanedto'],
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 16),
+                      ),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(widget.loan['category'],
+                              style: const TextStyle(
+                                  color: Color(0xFFF7F7F7), fontSize: 13)),
+                          Text(_getDateMessage(),
+                              style: const TextStyle(
+                                  color: Color(0xFFF7F7F7), fontSize: 13)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -255,5 +266,14 @@ class _LoansBuilderState extends State<LoansBuilder> {
                 Icons.assignment_turned_in,
                 color: Colors.white,
               );
+  }
+
+  Widget updateLoan(BuildContext context, Map<String, dynamic> selectedLoan) {
+    return Container(
+        height: 560,
+        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+        child: UpdateLoanScreen(
+          loanData: selectedLoan,
+        ));
   }
 }
