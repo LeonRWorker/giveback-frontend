@@ -9,19 +9,16 @@ import 'package:giveback/widgets/user_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoansPage extends StatelessWidget {
-  final dynamic userData;
-  const LoansPage({Key? key, required this.userData}) : super(key: key);
+  const LoansPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Loans(userData: userData);
+    return const Loans();
   }
 }
 
 class Loans extends StatefulWidget {
-  final dynamic userData;
-
-  const Loans({Key? key, required this.userData}) : super(key: key);
+  const Loans({Key? key}) : super(key: key);
 
   @override
   State<Loans> createState() => _LoansState();
@@ -31,9 +28,12 @@ class _LoansState extends State<Loans> {
   int _selectedIndex = 0;
   Map<String, dynamic> userData = {};
   List<dynamic> loansData = [];
+  bool isLoaded = false;
   List<dynamic> indDayLoans = [];
   List<dynamic> deliveredLoans = [];
   List<dynamic> lateLoans = [];
+  TextEditingController searchController = TextEditingController();
+  List<dynamic> filteredLoans = [];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -45,6 +45,26 @@ class _LoansState extends State<Loans> {
   void initState() {
     super.initState();
     getUserData();
+  }
+
+  void filterLoans() {
+    setState(() {
+      filteredLoans = loansData
+          .where((loan) =>
+              loan['loanedto']
+                  .toLowerCase()
+                  .contains(searchController.text.toLowerCase()) ||
+              loan['name']
+                  .toLowerCase()
+                  .contains(searchController.text.toLowerCase()) ||
+              loan['category']
+                  .toLowerCase()
+                  .contains(searchController.text.toLowerCase()) ||
+              loan['observations']
+                  .toLowerCase()
+                  .contains(searchController.text.toLowerCase()))
+          .toList();
+    });
   }
 
   void separateLoans(List<dynamic> loansData) {
@@ -90,6 +110,7 @@ class _LoansState extends State<Loans> {
       if (response.statusCode == 200) {
         setState(() {
           loansData = response.data;
+          filteredLoans = response.data;
           separateLoans(loansData);
         });
       } else {
@@ -127,63 +148,75 @@ class _LoansState extends State<Loans> {
         );
       }
     }
+    setState(() {
+      isLoaded = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: loansTopBar(context),
+        title: TopBarScreen(
+          userData: userData,
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFF439AE0),
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          Column(
-            children: [
-              const SizedBox(
-                height: 10,
-              ),
-              Expanded(
-                child: buildListView(context, loansData),
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              const SizedBox(
-                height: 10,
-              ),
-              Expanded(
-                child: buildListView(context, indDayLoans),
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              const SizedBox(
-                height: 10,
-              ),
-              Expanded(
-                child: buildListView(context, deliveredLoans),
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              const SizedBox(
-                height: 10,
-              ),
-              Expanded(
-                child: buildListView(context, lateLoans),
-              ),
-            ],
-          ),
-          const Column(
-            children: [Expanded(child: UserProfile())],
-          )
-        ],
+      body: Container(
+        color: Colors.white,
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            Column(
+              children: [
+                const SizedBox(
+                  height: 10,
+                ),
+                getFilter(context, filteredLoans),
+                Expanded(
+                  child: buildListView(context, filteredLoans),
+                ),
+              ],
+            ),
+            Column(
+              children: [
+                const SizedBox(
+                  height: 10,
+                ),
+                getFilter(context, indDayLoans),
+                Expanded(
+                  child: buildListView(context, indDayLoans),
+                ),
+              ],
+            ),
+            Column(
+              children: [
+                const SizedBox(
+                  height: 10,
+                ),
+                getFilter(context, deliveredLoans),
+                Expanded(
+                  child: buildListView(context, deliveredLoans),
+                ),
+              ],
+            ),
+            Column(
+              children: [
+                const SizedBox(
+                  height: 10,
+                ),
+                getFilter(context, lateLoans),
+                Expanded(
+                  child: buildListView(context, lateLoans),
+                ),
+              ],
+            ),
+            const Column(
+              children: [Expanded(child: UserProfile())],
+            )
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF439AE0),
@@ -221,6 +254,59 @@ class _LoansState extends State<Loans> {
     );
   }
 
+  Widget getFilter(BuildContext context, List<dynamic> selectedList) {
+    return selectedList.isEmpty
+        ? Container()
+        : Container(
+            // decoration: BoxDecoration(border: B),
+            width: MediaQuery.of(context).size.width - 20,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(20)),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  controller: searchController,
+                  onChanged: (value) {
+                    filterLoans();
+                  },
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Pesquisar...',
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Color(0xFF439AE0),
+                    ),
+                    border: OutlineInputBorder(),
+                    labelStyle: TextStyle(
+                      color: Color(0xFF439AE0),
+                      fontSize: 15,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                      borderSide: BorderSide(
+                        width: 1,
+                        color: Color(0xFF439AE0),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                      borderSide: BorderSide(
+                        width: 1,
+                        color: Color(0xFF439AE0),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+  }
+
   Widget notFoundLoansMessage(BuildContext context) {
     return Center(
       child: Container(
@@ -246,16 +332,18 @@ class _LoansState extends State<Loans> {
 
   Widget buildListView(BuildContext context, List<dynamic> selectedList) {
     return selectedList.isEmpty
-        ? loansData.isEmpty
+        ? !isLoaded
             ? const Center(child: CircularProgressIndicator())
-            : notFoundLoansMessage(context)
+            : ListView.builder(
+                itemCount: 1,
+                itemBuilder: (BuildContext context, int index) {
+                  return notFoundLoansMessage(context);
+                })
         : ListView.builder(
             itemCount: selectedList.length,
             itemBuilder: (BuildContext context, int index) {
               return LoansScreen(
-                userData: userData,
                 loan: selectedList[index],
-                updateLoansData: getUserData,
               );
             },
           );
