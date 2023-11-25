@@ -195,6 +195,7 @@ class _LoansBuilderState extends State<LoansBuilder> {
                         ],
                       )),
                 ),
+                direction: DismissDirection.startToEnd,
                 onDismissed: (direction) {
                   String updatedStatus = widget.loan['status'] == 'inday'
                       ? 'returned'
